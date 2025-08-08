@@ -36,3 +36,15 @@ h1:focus {
 .form-floating > .form-control-plaintext:focus::placeholder, .form-floating > .form-control:focus::placeholder {
     text-align: start;
 }
+
+.tetris-container {
+    max-width: 300px;
+    margin: auto;
+    user-select: none;
+}
+
+.tetris-grid {
+    background-color: #111;
+    border: 2px solid #666;
+    margin-top: 1rem;
+}

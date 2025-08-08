@@ -1,7 +1,336 @@
 ﻿@page "/"
+@using System.Timers
 
-<PageTitle>Home</PageTitle>
+<h3>Tetris</h3>
 
-<h1>Hello, world!</h1>
+<div class="tetris-container">
+    <div class="game-info">
+        <p>Score: @score</p>
+        <p>Level: @level</p>
+        <button class="btn btn-primary" @onclick="StartGame" disabled="@gameRunning">Start</button>
+        <button class="btn btn-secondary" @onclick="ResetGame">Reset</button>
+    </div>
 
-Welcome to your new app.
+    <div tabindex="0" @onkeydown="HandleKey" class="tetris-grid" style="display: grid; grid-template-columns: repeat(@GridWidth, 25px); grid-gap: 2px; outline:none;">
+        @for (int y = 0; y < GridHeight; y++)
+        {
+            for (int x = 0; x < GridWidth; x++)
+            {
+                var color = GetCellColor(x, y);
+                <div style="width: 25px; height: 25px; background-color:@color; border: 1px solid #444;"></div>
+            }
+        }
+    </div>
+</div>
+
+@code {
+    private const int GridWidth = 10;
+    private const int GridHeight = 20;
+
+    private int[,] board = new int[GridHeight, GridWidth]; // 0=empty, >0=block type
+
+    private Tetromino currentPiece;
+    private int currentX;
+    private int currentY;
+    private int rotation;
+
+    private Timer gameTimer;
+
+    private int score = 0;
+    private int level = 1;
+    private int linesCleared = 0;
+    private bool gameRunning = false;
+
+    protected override void OnInitialized()
+    {
+        ResetGame();
+        gameTimer = new Timer();
+        gameTimer.Interval = 500;
+        gameTimer.Elapsed += OnGameTick;
+        gameTimer.AutoReset = true;
+    }
+
+    private void StartGame()
+    {
+        if (!gameRunning)
+        {
+            ResetGame();
+            gameRunning = true;
+            gameTimer.Interval = 500;
+            gameTimer.Start();
+        }
+    }
+
+    private void ResetGame()
+    {
+        score = 0;
+        level = 1;
+        linesCleared = 0;
+        gameRunning = false;
+        gameTimer?.Stop();
+
+        // Clear board
+        for (int y = 0; y < GridHeight; y++)
+            for (int x = 0; x < GridWidth; x++)
+                board[y, x] = 0;
+
+        SpawnNewPiece();
+    }
+
+    private void OnGameTick(object? sender, ElapsedEventArgs e)
+    {
+        if (!gameRunning) return;
+
+        InvokeAsync(() =>
+        {
+            MoveDown();
+            StateHasChanged();
+        });
+    }
+
+    private void SpawnNewPiece()
+    {
+        currentPiece = Tetromino.GetRandom();
+        currentX = GridWidth / 2 - 2;
+        currentY = 0;
+        rotation = 0;
+
+        if (!IsValidPosition(currentX, currentY, rotation))
+        {
+            // Game Over
+            gameRunning = false;
+            gameTimer?.Stop();
+            StateHasChanged();
+        }
+    }
+
+    private bool IsValidPosition(int x, int y, int rotation)
+    {
+        var shape = currentPiece.Shapes[rotation];
+        for (int dy = 0; dy < shape.GetLength(0); dy++)
+        {
+            for (int dx = 0; dx < shape.GetLength(1); dx++)
+            {
+                if (shape[dy, dx] == 0) continue;
+                int boardX = x + dx;
+                int boardY = y + dy;
+                if (boardX < 0 || boardX >= GridWidth || boardY < 0 || boardY >= GridHeight)
+                    return false;
+                if (board[boardY, boardX] != 0)
+                    return false;
+            }
+        }
+        return true;
+    }
+
+    private void PlacePiece()
+    {
+        var shape = currentPiece.Shapes[rotation];
+        for (int dy = 0; dy < shape.GetLength(0); dy++)
+        {
+            for (int dx = 0; dx < shape.GetLength(1); dx++)
+            {
+                if (shape[dy, dx] != 0)
+                {
+                    int boardX = currentX + dx;
+                    int boardY = currentY + dy;
+                    if (boardX >= 0 && boardX < GridWidth && boardY >= 0 && boardY < GridHeight)
+                    {
+                        board[boardY, boardX] = currentPiece.Id;
+                    }
+                }
+            }
+        }
+    }
+
+    private void ClearLines()
+    {
+        int linesThisDrop = 0;
+        for (int y = GridHeight - 1; y >= 0; y--)
+        {
+            bool fullLine = true;
+            for (int x = 0; x < GridWidth; x++)
+            {
+                if (board[y, x] == 0)
+                {
+                    fullLine = false;
+                    break;
+                }
+            }
+            if (fullLine)
+            {
+                linesThisDrop++;
+                // Move everything above down
+                for (int row = y; row > 0; row--)
+                {
+                    for (int col = 0; col < GridWidth; col++)
+                    {
+                        board[row, col] = board[row - 1, col];
+                    }
+                }
+                // Clear top row
+                for (int col = 0; col < GridWidth; col++)
+                {
+                    board[0, col] = 0;
+                }
+                y++; // recheck same row
+            }
+        }
+        if (linesThisDrop > 0)
+        {
+            linesCleared += linesThisDrop;
+            score += linesThisDrop * 100;
+            level = linesCleared / 10 + 1;
+            gameTimer.Interval = Math.Max(100, 500 - (level - 1) * 50);
+        }
+    }
+
+    private void MoveDown()
+    {
+        if (IsValidPosition(currentX, currentY + 1, rotation))
+        {
+            currentY++;
+        }
+        else
+        {
+            PlacePiece();
+            ClearLines();
+            SpawnNewPiece();
+        }
+    }
+
+    private void MoveLeft()
+    {
+        if (IsValidPosition(currentX - 1, currentY, rotation))
+        {
+            currentX--;
+        }
+    }
+
+    private void MoveRight()
+    {
+        if (IsValidPosition(currentX + 1, currentY, rotation))
+        {
+            currentX++;
+        }
+    }
+
+    private void Rotate()
+    {
+        int newRotation = (rotation + 1) % currentPiece.Shapes.Length;
+        if (IsValidPosition(currentX, currentY, newRotation))
+        {
+            rotation = newRotation;
+        }
+    }
+
+    private void HandleKey(KeyboardEventArgs e)
+    {
+        if (!gameRunning) return;
+
+        switch (e.Key)
+        {
+            case "ArrowLeft":
+                MoveLeft();
+                break;
+            case "ArrowRight":
+                MoveRight();
+                break;
+            case "ArrowDown":
+                MoveDown();
+                break;
+            case "ArrowUp":
+                Rotate();
+                break;
+        }
+    }
+
+    private string GetCellColor(int x, int y)
+    {
+        // Check if current piece occupies cell
+        var shape = currentPiece?.Shapes[rotation];
+        if (shape != null)
+        {
+            int relX = x - currentX;
+            int relY = y - currentY;
+            if (relX >= 0 && relX < shape.GetLength(1) && relY >= 0 && relY < shape.GetLength(0))
+            {
+                if (shape[relY, relX] != 0)
+                {
+                    return currentPiece.Color;
+                }
+            }
+        }
+
+        // Check board
+        int id = board[y, x];
+        return id switch
+        {
+            1 => "#f44336", // Red
+            2 => "#2196f3", // Blue
+            3 => "#ffeb3b", // Yellow
+            4 => "#4caf50", // Green
+            5 => "#9c27b0", // Purple
+            6 => "#ff9800", // Orange
+            7 => "#00bcd4", // Cyan
+            _ => "#222"
+        };
+    }
+
+    private class Tetromino
+    {
+        public int Id { get; }
+        public string Color { get; }
+        public int[][,] Shapes { get; }
+
+        private static readonly Tetromino[] AllTetrominos = new[]
+        {
+            new Tetromino(1, "#f44336", new [] { // I piece (red)
+                new int[,] { {1,1,1,1} },
+                new int[,] { {1},{1},{1},{1} }
+            }),
+            new Tetromino(2, "#2196f3", new [] { // J piece (blue)
+                new int[,] { {2,0,0},{2,2,2} },
+                new int[,] { {2,2},{2,0},{2,0} },
+                new int[,] { {2,2,2},{0,0,2} },
+                new int[,] { {0,2},{0,2},{2,2} }
+            }),
+            new Tetromino(3, "#ffeb3b", new [] { // O piece (yellow)
+                new int[,] { {3,3},{3,3} }
+            }),
+            new Tetromino(4, "#4caf50", new [] { // S piece (green)
+                new int[,] { {0,4,4},{4,4,0} },
+                new int[,] { {4,0},{4,4},{0,4} }
+            }),
+            new Tetromino(5, "#9c27b0", new [] { // T piece (purple)
+                new int[,] { {0,5,0},{5,5,5} },
+                new int[,] { {5,0},{5,5},{5,0} },
+                new int[,] { {5,5,5},{0,5,0} },
+                new int[,] { {0,5},{5,5},{0,5} }
+            }),
+            new Tetromino(6, "#ff9800", new [] { // L piece (orange)
+                new int[,] { {0,0,6},{6,6,6} },
+                new int[,] { {6,0},{6,0},{6,6} },
+                new int[,] { {6,6,6},{6,0,0} },
+                new int[,] { {6,6},{0,6},{0,6} }
+            }),
+            new Tetromino(7, "#00bcd4", new [] { // Z piece (cyan)
+                new int[,] { {7,7,0},{0,7,7} },
+                new int[,] { {0,7},{7,7},{7,0} }
+            })
+        };
+
+        private Tetromino(int id, string color, int[][,] shapes)
+        {
+            Id = id;
+            Color = color;
+            Shapes = shapes;
+        }
+
+        public static Tetromino GetRandom()
+        {
+            var rnd = new Random();
+            return AllTetrominos[rnd.Next(AllTetrominos.Length)];
+        }
+    }
+}
