@@ -1,0 +1,31 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.14.36301.6 d17.14
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Gpt5BlazorTetris", "Gpt5BlazorTetris\Gpt5BlazorTetris.csproj", "{0D698E12-008D-4AF1-BE3F-CC3C15B1CCDD}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Gpt5BlazorTetris.Client", "Gpt5BlazorTetris.Client\Gpt5BlazorTetris.Client.csproj", "{A6828D62-CA0D-4161-B009-16F19003659F}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{0D698E12-008D-4AF1-BE3F-CC3C15B1CCDD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0D698E12-008D-4AF1-BE3F-CC3C15B1CCDD}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0D698E12-008D-4AF1-BE3F-CC3C15B1CCDD}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0D698E12-008D-4AF1-BE3F-CC3C15B1CCDD}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A6828D62-CA0D-4161-B009-16F19003659F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A6828D62-CA0D-4161-B009-16F19003659F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A6828D62-CA0D-4161-B009-16F19003659F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A6828D62-CA0D-4161-B009-16F19003659F}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {8A074318-0B28-4F3D-B90E-1A9BC9C4335B}
+	EndGlobalSection
+EndGlobal
